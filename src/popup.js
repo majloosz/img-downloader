@@ -107,7 +107,7 @@ async function downloadUrls(urls) {
 
 function renderImages(images) {
   if (!images.length) {
-    renderEmpty("No JPG, JPEG, PNG, or WEBP images found.");
+    renderEmpty("No supported images found.");
     updateSelectionUi();
     return;
   }

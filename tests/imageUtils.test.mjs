@@ -19,6 +19,20 @@ test("filters supported remote image URLs", () => {
   assert.equal(isSupportedImageUrl("https://example.com/a.jpeg?x=1"), true);
   assert.equal(isSupportedImageUrl("https://example.com/a.png#hash"), true);
   assert.equal(isSupportedImageUrl("https://example.com/a.webp"), true);
+  assert.equal(
+    isSupportedImageUrl(
+      "https://a.allegroimg.com/original/11bc1e/922e56f74e5c88e857bdaa318554/FOLIA-STRETCH-CZARNA-3-XL-GRUBA-MOCNA-DO-PACZEK-KRYJACA-PREMIUM",
+      { source: "img" }
+    ),
+    true
+  );
+  assert.equal(
+    isSupportedImageUrl(
+      "https://a.allegroimg.com/original/11bc1e/922e56f74e5c88e857bdaa318554/FOLIA-STRETCH-CZARNA-3-XL-GRUBA-MOCNA-DO-PACZEK-KRYJACA-PREMIUM",
+      { source: "link" }
+    ),
+    false
+  );
   assert.equal(isSupportedImageUrl("https://example.com/a.svg"), false);
   assert.equal(isSupportedImageUrl("data:image/png;base64,abc"), false);
   assert.equal(isSupportedImageUrl("javascript:alert(1)"), false);

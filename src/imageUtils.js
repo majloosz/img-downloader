@@ -1,5 +1,9 @@
 const SUPPORTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 
+function hasPathExtension(pathname) {
+  return /\.[a-z0-9]+$/i.test(pathname);
+}
+
 export function getImageExtension(url) {
   try {
     const parsed = new URL(url);
@@ -10,10 +14,20 @@ export function getImageExtension(url) {
   }
 }
 
-export function isSupportedImageUrl(url) {
+export function isSupportedImageUrl(url, options = {}) {
   try {
     const parsed = new URL(url);
-    return ["http:", "https:"].includes(parsed.protocol) && SUPPORTED_EXTENSIONS.has(getImageExtension(url));
+    if (!["http:", "https:"].includes(parsed.protocol)) return false;
+
+    if (SUPPORTED_EXTENSIONS.has(getImageExtension(url))) {
+      return true;
+    }
+
+    if (options.source === "link") {
+      return false;
+    }
+
+    return !hasPathExtension(parsed.pathname);
   } catch {
     return false;
   }

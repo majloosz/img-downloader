@@ -1,6 +1,10 @@
 (() => {
   const SUPPORTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 
+  function hasPathExtension(pathname) {
+    return /\.[a-z0-9]+$/i.test(pathname);
+  }
+
   function getImageExtension(url) {
     try {
       const parsed = new URL(url);
@@ -11,10 +15,20 @@
     }
   }
 
-  function isSupportedImageUrl(url) {
+  function isSupportedImageUrl(url, options = {}) {
     try {
       const parsed = new URL(url);
-      return ["http:", "https:"].includes(parsed.protocol) && SUPPORTED_EXTENSIONS.has(getImageExtension(url));
+      if (!["http:", "https:"].includes(parsed.protocol)) return false;
+
+      if (SUPPORTED_EXTENSIONS.has(getImageExtension(url))) {
+        return true;
+      }
+
+      if (options.source === "link") {
+        return false;
+      }
+
+      return !hasPathExtension(parsed.pathname);
     } catch {
       return false;
     }
@@ -65,7 +79,7 @@
 
   function addCandidate(candidates, rawUrl, metadata = {}) {
     const url = absoluteUrl(rawUrl);
-    if (!isSupportedImageUrl(url)) return;
+    if (!isSupportedImageUrl(url, { source: metadata.source })) return;
     candidates.push(normalize({ ...metadata, url }));
   }
 
