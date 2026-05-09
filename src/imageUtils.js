@@ -79,10 +79,10 @@ export function sortByLargestResolution(images) {
   });
 }
 
-export function filterImagesBelowSizeKb(images, maximumSizeKb) {
-  const thresholdBytes = Math.max(0, Number.parseInt(maximumSizeKb, 10) || 0) * 1024;
+export function filterImagesAboveSizeKb(images, minimumSizeKb) {
+  const thresholdBytes = Math.max(0, Number.parseInt(minimumSizeKb, 10) || 0) * 1024;
   if (thresholdBytes === 0) return images;
-  return images.filter((image) => !Number.isFinite(image.sizeBytes) || image.sizeBytes < thresholdBytes);
+  return images.filter((image) => !Number.isFinite(image.sizeBytes) || image.sizeBytes >= thresholdBytes);
 }
 
 export function formatBytes(bytes) {

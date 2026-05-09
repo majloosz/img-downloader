@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildDownloadFilename,
   dedupeImages,
-  filterImagesBelowSizeKb,
+  filterImagesAboveSizeKb,
   formatBytes,
   getLargestSrcsetUrl,
   getSelectedImages,
@@ -119,7 +119,7 @@ test("returns selected images in current display order", () => {
   );
 });
 
-test("keeps unknown-size images visible while filtering by maximum size in KB", () => {
+test("keeps unknown-size images visible while filtering by minimum size in KB", () => {
   const images = [
     normalizeImageCandidate({ url: "https://e.test/tiny.jpg", width: 10, height: 10, sizeBytes: 4 * 1024 }),
     normalizeImageCandidate({ url: "https://e.test/large.jpg", width: 1000, height: 800, sizeBytes: 6 * 1024 }),
@@ -127,8 +127,8 @@ test("keeps unknown-size images visible while filtering by maximum size in KB", 
   ];
 
   assert.deepEqual(
-    filterImagesBelowSizeKb(images, 5).map((image) => image.url),
-    ["https://e.test/tiny.jpg", "https://e.test/unknown.webp"]
+    filterImagesAboveSizeKb(images, 5).map((image) => image.url),
+    ["https://e.test/large.jpg", "https://e.test/unknown.webp"]
   );
-  assert.equal(filterImagesBelowSizeKb(images, 0).length, 3);
+  assert.equal(filterImagesAboveSizeKb(images, 0).length, 3);
 });

@@ -1,13 +1,13 @@
 import {
-  filterImagesBelowSizeKb,
+  filterImagesAboveSizeKb,
   formatBytes,
   getSelectedImages,
   sortByLargestResolution,
   toggleSelectedUrl
 } from "./imageUtils.js";
 
-const DEFAULT_MAX_SIZE_KB = 5;
-const MAX_SIZE_STORAGE_KEY = "simpleImageDownloader.maximumSizeKb";
+const DEFAULT_MIN_SIZE_KB = 5;
+const MIN_SIZE_STORAGE_KEY = "simpleImageDownloader.minimumSizeKb";
 const statusElement = document.querySelector("#status");
 const listElement = document.querySelector("#imageList");
 const refreshButton = document.querySelector("#refreshButton");
@@ -61,23 +61,23 @@ function renderEmpty(message) {
   listElement.replaceChildren(empty);
 }
 
-function readMaximumSizeKb() {
-  const savedValue = Number.parseInt(localStorage.getItem(MAX_SIZE_STORAGE_KEY), 10);
-  return Number.isFinite(savedValue) ? savedValue : DEFAULT_MAX_SIZE_KB;
+function readMinimumSizeKb() {
+  const savedValue = Number.parseInt(localStorage.getItem(MIN_SIZE_STORAGE_KEY), 10);
+  return Number.isFinite(savedValue) ? savedValue : DEFAULT_MIN_SIZE_KB;
 }
 
-function writeMaximumSizeKb(value) {
-  localStorage.setItem(MAX_SIZE_STORAGE_KEY, String(value));
+function writeMinimumSizeKb(value) {
+  localStorage.setItem(MIN_SIZE_STORAGE_KEY, String(value));
 }
 
-function updateMaximumSizeLabel(value) {
-  maxSizeLabel.textContent = `Max size: ${value} KB`;
+function updateMinimumSizeLabel(value) {
+  maxSizeLabel.textContent = `Min size: ${value} KB`;
 }
 
-function syncMaximumSizeControl() {
-  const maximumSizeKb = readMaximumSizeKb();
-  maxSizeSlider.value = String(maximumSizeKb);
-  updateMaximumSizeLabel(maximumSizeKb);
+function syncMinimumSizeControl() {
+  const minimumSizeKb = readMinimumSizeKb();
+  maxSizeSlider.value = String(minimumSizeKb);
+  updateMinimumSizeLabel(minimumSizeKb);
 }
 
 function removeHiddenSelections() {
@@ -192,18 +192,18 @@ function renderImages(images) {
 }
 
 function renderCurrentImages() {
-  const maximumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
-  visibleImages = filterImagesBelowSizeKb(currentImages, maximumSizeKb);
+  const minimumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
+  visibleImages = filterImagesAboveSizeKb(currentImages, minimumSizeKb);
   removeHiddenSelections();
 
   const total = currentImages.length;
   const shown = visibleImages.length;
-  statusElement.textContent = maximumSizeKb
+  statusElement.textContent = minimumSizeKb
     ? `${shown} of ${total} images shown`
     : `${total} image${total === 1 ? "" : "s"} found`;
 
-  if (total > 0 && shown === 0 && maximumSizeKb > 0) {
-    renderEmpty(`No images below ${maximumSizeKb} KB.`);
+  if (total > 0 && shown === 0 && minimumSizeKb > 0) {
+    renderEmpty(`No images at or above ${minimumSizeKb} KB.`);
     updateSelectionUi();
     return;
   }
@@ -251,12 +251,12 @@ downloadSelectedButton.addEventListener("click", async () => {
 });
 
 maxSizeSlider.addEventListener("input", () => {
-  const maximumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
-  writeMaximumSizeKb(maximumSizeKb);
-  updateMaximumSizeLabel(maximumSizeKb);
+  const minimumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
+  writeMinimumSizeKb(minimumSizeKb);
+  updateMinimumSizeLabel(minimumSizeKb);
   renderCurrentImages();
 });
 
-syncMaximumSizeControl();
+syncMinimumSizeControl();
 refreshButton.addEventListener("click", refresh);
 refresh();
