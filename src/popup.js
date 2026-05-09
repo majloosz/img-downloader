@@ -5,6 +5,8 @@ import {
   sortByLargestResolution,
   toggleSelectedUrl
 } from "./imageUtils.js";
+import { getKeyboardToggleRow } from "./popupInteractionUtils.js";
+import { createRenderBatcher } from "./renderBatcher.js";
 
 const DEFAULT_MIN_SIZE_KB = 5;
 const MIN_SIZE_STORAGE_KEY = "simpleImageDownloader.minimumSizeKb";
@@ -19,6 +21,9 @@ let currentImages = [];
 let visibleImages = [];
 let selectedUrls = new Set();
 let activeScanId = 0;
+const renderBatcher = createRenderBatcher(() => {
+  renderCurrentImages();
+});
 
 function isRestrictedPage(url) {
   return !url || /^(chrome|edge|about|chrome-extension):\/\//.test(url);
@@ -115,25 +120,25 @@ async function requestImageSize(url) {
 function updateImageSize(url, sizeBytes) {
   let didChange = false;
 
-  currentImages = currentImages.map((image) => {
-    if (image.url !== url) return image;
+  for (const image of currentImages) {
+    if (image.url !== url) continue;
 
     const nextSizeBytes = Number.isFinite(sizeBytes) && sizeBytes > 0 ? sizeBytes : image.sizeBytes;
     if (nextSizeBytes === image.sizeBytes && !image.sizePending) {
-      return image;
+      break;
     }
 
+    image.sizeBytes = nextSizeBytes;
+    image.sizePending = false;
     didChange = true;
-    return {
-      ...image,
-      sizeBytes: nextSizeBytes,
-      sizePending: false
-    };
-  });
+    break;
+  }
 
   if (didChange) {
     currentImages = sortByLargestResolution(currentImages);
   }
+
+  return didChange;
 }
 
 async function resolveUnknownImageSizes(scanId) {
@@ -158,8 +163,9 @@ async function resolveUnknownImageSizes(scanId) {
 
         if (scanId !== activeScanId) return;
 
-        updateImageSize(url, sizeBytes);
-        renderCurrentImages();
+        if (updateImageSize(url, sizeBytes)) {
+          renderBatcher.request();
+        }
       }
     })
   );
@@ -181,17 +187,6 @@ function renderImages(images) {
     row.tabIndex = 0;
     row.setAttribute("role", "button");
     row.setAttribute("aria-label", `Select image ${imageDimensions(image)}`);
-    row.addEventListener("click", () => {
-      selectedUrls = toggleSelectedUrl(selectedUrls, image.url);
-      updateSelectionUi();
-    });
-    row.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        selectedUrls = toggleSelectedUrl(selectedUrls, image.url);
-        updateSelectionUi();
-      }
-    });
 
     const selectionMark = document.createElement("span");
     selectionMark.className = "selection-mark";
@@ -228,20 +223,9 @@ function renderImages(images) {
     const button = document.createElement("button");
     button.className = "primary";
     button.type = "button";
+    button.dataset.action = "download";
+    button.dataset.url = image.url;
     button.textContent = "Download";
-    button.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      button.disabled = true;
-      button.textContent = "Downloading";
-
-      const result = await downloadUrls([image.url]);
-      if (result?.ok) {
-        button.textContent = "Downloaded";
-      } else {
-        button.disabled = false;
-        button.textContent = "Retry";
-      }
-    });
 
     actions.append(button);
     meta.append(stats, source, url, actions);
@@ -252,6 +236,39 @@ function renderImages(images) {
   listElement.replaceChildren(fragment);
   updateSelectionUi();
 }
+
+listElement.addEventListener("click", async (event) => {
+  const actionButton = event.target.closest?.('button[data-action="download"]');
+  if (actionButton) {
+    event.stopPropagation();
+    actionButton.disabled = true;
+    actionButton.textContent = "Downloading";
+
+    const result = await downloadUrls([actionButton.dataset.url]);
+    if (result?.ok) {
+      actionButton.textContent = "Downloaded";
+    } else {
+      actionButton.disabled = false;
+      actionButton.textContent = "Retry";
+    }
+    return;
+  }
+
+  const row = event.target.closest?.(".image-row");
+  if (!row) return;
+
+  selectedUrls = toggleSelectedUrl(selectedUrls, row.dataset.url);
+  updateSelectionUi();
+});
+
+listElement.addEventListener("keydown", (event) => {
+  const row = getKeyboardToggleRow(event);
+  if (!row) return;
+
+  event.preventDefault();
+  selectedUrls = toggleSelectedUrl(selectedUrls, row.dataset.url);
+  updateSelectionUi();
+});
 
 function renderCurrentImages() {
   const minimumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;

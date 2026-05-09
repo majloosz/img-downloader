@@ -1,5 +1,6 @@
 (() => {
   const SUPPORTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
+  const BACKGROUND_SCAN_CANDIDATE_LIMIT = 150;
 
   function hasPathExtension(pathname) {
     return /\.[a-z0-9]+$/i.test(pathname);
@@ -54,16 +55,24 @@
       .filter(Boolean);
   }
 
-  function getResourceSize(url) {
-    const entries = performance
-      .getEntriesByType("resource")
-      .filter((entry) => entry.name === url);
-    const entry = entries.at(-1);
-    const size = entry?.encodedBodySize || entry?.transferSize || 0;
-    return size > 0 ? size : null;
+  function buildResourceSizeMap() {
+    const resourceSizeMap = new Map();
+
+    performance.getEntriesByType("resource").forEach((entry) => {
+      const size = entry?.encodedBodySize || entry?.transferSize || 0;
+      if (size > 0 && entry?.name) {
+        resourceSizeMap.set(entry.name, size);
+      }
+    });
+
+    return resourceSizeMap;
   }
 
-  function normalize(candidate) {
+  function getResourceSize(resourceSizeMap, url) {
+    return resourceSizeMap.get(url) || null;
+  }
+
+  function normalize(candidate, resourceSizeMap) {
     const width = Number.parseInt(candidate.width, 10) || 0;
     const height = Number.parseInt(candidate.height, 10) || 0;
 
@@ -72,27 +81,27 @@
       width,
       height,
       area: width * height,
-      sizeBytes: candidate.sizeBytes || getResourceSize(candidate.url),
+      sizeBytes: candidate.sizeBytes || getResourceSize(resourceSizeMap, candidate.url),
       source: candidate.source || "page"
     };
   }
 
-  function addCandidate(candidates, rawUrl, metadata = {}) {
+  function addCandidate(candidates, resourceSizeMap, rawUrl, metadata = {}) {
     const url = absoluteUrl(rawUrl);
     if (!isSupportedImageUrl(url, { source: metadata.source })) return;
-    candidates.push(normalize({ ...metadata, url }));
+    candidates.push(normalize({ ...metadata, url }, resourceSizeMap));
   }
 
-  function collectImgCandidates(candidates) {
+  function collectImgCandidates(candidates, resourceSizeMap) {
     document.querySelectorAll("img").forEach((img) => {
-      addCandidate(candidates, img.currentSrc || img.src, {
+      addCandidate(candidates, resourceSizeMap, img.currentSrc || img.src, {
         width: img.naturalWidth || img.width,
         height: img.naturalHeight || img.height,
         source: "img"
       });
 
       parseSrcset(img.srcset).forEach((entry) => {
-        addCandidate(candidates, entry.url, {
+        addCandidate(candidates, resourceSizeMap, entry.url, {
           width: img.naturalWidth || img.width,
           height: img.naturalHeight || img.height,
           source: "srcset"
@@ -101,25 +110,27 @@
     });
   }
 
-  function collectSourceCandidates(candidates) {
+  function collectSourceCandidates(candidates, resourceSizeMap) {
     document.querySelectorAll("source[srcset]").forEach((source) => {
       parseSrcset(source.srcset).forEach((entry) => {
-        addCandidate(candidates, entry.url, { source: "source" });
+        addCandidate(candidates, resourceSizeMap, entry.url, { source: "source" });
       });
     });
   }
 
-  function collectLinkedImages(candidates) {
+  function collectLinkedImages(candidates, resourceSizeMap) {
     document.querySelectorAll("a[href]").forEach((link) => {
-      addCandidate(candidates, link.href, { source: "link" });
+      addCandidate(candidates, resourceSizeMap, link.href, { source: "link" });
     });
   }
 
-  function collectBackgroundImages(candidates) {
+  function collectBackgroundImages(candidates, resourceSizeMap) {
     document.querySelectorAll("body *").forEach((element) => {
       const backgroundImage = window.getComputedStyle(element).backgroundImage;
       const matches = [...backgroundImage.matchAll(/url\(["']?([^"')]+)["']?\)/g)];
-      matches.forEach((match) => addCandidate(candidates, match[1], { source: "background" }));
+      matches.forEach((match) =>
+        addCandidate(candidates, resourceSizeMap, match[1], { source: "background" })
+      );
     });
   }
 
@@ -143,10 +154,13 @@
 
   globalThis.__SIMPLE_IMAGE_DOWNLOADER_SCAN__ = () => {
     const candidates = [];
-    collectImgCandidates(candidates);
-    collectSourceCandidates(candidates);
-    collectLinkedImages(candidates);
-    collectBackgroundImages(candidates);
+    const resourceSizeMap = buildResourceSizeMap();
+    collectImgCandidates(candidates, resourceSizeMap);
+    collectSourceCandidates(candidates, resourceSizeMap);
+    collectLinkedImages(candidates, resourceSizeMap);
+    if (candidates.length < BACKGROUND_SCAN_CANDIDATE_LIMIT) {
+      collectBackgroundImages(candidates, resourceSizeMap);
+    }
     return dedupeAndSort(candidates);
   };
 })();
