@@ -58,6 +58,18 @@ test("falls back to range GET and prefers total bytes from content-range", async
   assert.equal(requests[1].options.headers.Range, "bytes=0-0");
 });
 
+test("probes image size without sending credentials", async () => {
+  const requests = [];
+  await resolveImageSize("https://a.allegroimg.com/original/test/image", async (url, options) => {
+    requests.push({ url, options });
+    return createResponse({ status: 403 });
+  });
+
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].options.credentials, "omit");
+  assert.equal(requests[1].options.credentials, "omit");
+});
+
 test("uses full response content-length when range request is not partial", async () => {
   const responses = [
     createResponse({ status: 200 }),

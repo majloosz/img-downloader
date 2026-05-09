@@ -42,7 +42,7 @@ async function tryFetch(fetchImpl, url, options) {
 export async function resolveImageSize(url, fetchImpl = fetch) {
   const headResponse = await tryFetch(fetchImpl, url, {
     method: "HEAD",
-    credentials: "include",
+    credentials: "omit",
     redirect: "follow"
   });
   const headSize = getContentLength(headResponse);
@@ -51,7 +51,7 @@ export async function resolveImageSize(url, fetchImpl = fetch) {
 
   const rangeResponse = await tryFetch(fetchImpl, url, {
     method: "GET",
-    credentials: "include",
+    credentials: "omit",
     headers: { Range: "bytes=0-0" },
     redirect: "follow"
   });
