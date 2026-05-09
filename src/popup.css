@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 440px;
+  min-height: 260px;
+  max-height: 620px;
+  margin: 0;
+  overflow-y: auto;
+  color: #1f2933;
+  background: #f6f8fb;
+  font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #d8e0e8;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+h1,
+.status {
+  margin: 0;
+}
+
+h1 {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.status {
+  margin-top: 2px;
+  color: #64748b;
+}
+
+button {
+  min-height: 32px;
+  border: 1px solid #b8c4d0;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: #ffffff;
+  color: #1f2933;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+button.primary {
+  background: #1167b1;
+  border-color: #1167b1;
+  color: #ffffff;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.image-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.empty {
+  margin: 36px 20px;
+  color: #64748b;
+  text-align: center;
+}
+
+.image-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.image-row.selected {
+  border-color: #1167b1;
+  background: #eef6ff;
+  box-shadow: 0 0 0 2px rgba(17, 103, 177, 0.14);
+}
+
+.selection-mark {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid #9fb4c8;
+  border-radius: 50%;
+  background: #ffffff;
+  color: transparent;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.image-row.selected .selection-mark {
+  border-color: #1167b1;
+  background: #1167b1;
+  color: #ffffff;
+}
+
+.preview {
+  width: 104px;
+  height: 78px;
+  object-fit: contain;
+  background: #edf2f7;
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+}
+
+.meta {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.stats {
+  color: #111827;
+  font-weight: 700;
+}
+
+.source,
+.url {
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-start;
+}
