@@ -8,6 +8,7 @@ import {
 
 const DEFAULT_MIN_SIZE_KB = 5;
 const MIN_SIZE_STORAGE_KEY = "simpleImageDownloader.minimumSizeKb";
+const MAX_CONCURRENT_SIZE_REQUESTS = 4;
 const statusElement = document.querySelector("#status");
 const listElement = document.querySelector("#imageList");
 const refreshButton = document.querySelector("#refreshButton");
@@ -17,6 +18,8 @@ const maxSizeLabel = document.querySelector("#maxSizeLabel");
 let currentImages = [];
 let visibleImages = [];
 let selectedUrls = new Set();
+let activeScanId = 0;
+let pendingSizeLookups = 0;
 
 function isRestrictedPage(url) {
   return !url || /^(chrome|edge|about|chrome-extension):\/\//.test(url);
@@ -105,6 +108,75 @@ async function downloadUrls(urls) {
   return chrome.runtime.sendMessage({ type: "DOWNLOAD_IMAGES", urls });
 }
 
+async function requestImageSize(url) {
+  const result = await chrome.runtime.sendMessage({ type: "GET_IMAGE_SIZE", url });
+  return result?.ok ? result.sizeBytes : null;
+}
+
+function updateImageSize(url, sizeBytes) {
+  let didChange = false;
+
+  currentImages = currentImages.map((image) => {
+    if (image.url !== url) return image;
+
+    const nextSizeBytes = Number.isFinite(sizeBytes) && sizeBytes > 0 ? sizeBytes : image.sizeBytes;
+    const nextPending = false;
+    if (nextSizeBytes === image.sizeBytes && image.sizePending === nextPending) {
+      return image;
+    }
+
+    didChange = true;
+    return {
+      ...image,
+      sizeBytes: nextSizeBytes,
+      sizePending: nextPending
+    };
+  });
+
+  if (didChange) {
+    currentImages = sortByLargestResolution(currentImages);
+  }
+}
+
+async function resolveUnknownImageSizes(scanId) {
+  const unresolvedUrls = [
+    ...new Set(
+      currentImages
+        .filter((image) => !Number.isFinite(image.sizeBytes))
+        .map((image) => image.url)
+    )
+  ];
+
+  if (!unresolvedUrls.length) {
+    pendingSizeLookups = 0;
+    return;
+  }
+
+  currentImages = currentImages.map((image) =>
+    Number.isFinite(image.sizeBytes) ? image : { ...image, sizePending: true }
+  );
+  pendingSizeLookups = unresolvedUrls.length;
+  renderCurrentImages();
+
+  const queue = [...unresolvedUrls];
+  const workerCount = Math.min(MAX_CONCURRENT_SIZE_REQUESTS, queue.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (queue.length && scanId === activeScanId) {
+        const url = queue.shift();
+        const sizeBytes = await requestImageSize(url);
+
+        if (scanId !== activeScanId) return;
+
+        updateImageSize(url, sizeBytes);
+        pendingSizeLookups = Math.max(0, pendingSizeLookups - 1);
+        renderCurrentImages();
+      }
+    })
+  );
+}
+
 function renderImages(images) {
   if (!images.length) {
     renderEmpty("No supported images found.");
@@ -149,7 +221,9 @@ function renderImages(images) {
 
     const stats = document.createElement("div");
     stats.className = "stats";
-    stats.textContent = `${imageDimensions(image)} · ${formatBytes(image.sizeBytes)}`;
+    stats.textContent = `${imageDimensions(image)} · ${
+      image.sizePending ? "checking size..." : formatBytes(image.sizeBytes)
+    }`;
 
     const source = document.createElement("div");
     source.className = "source";
@@ -198,9 +272,12 @@ function renderCurrentImages() {
 
   const total = currentImages.length;
   const shown = visibleImages.length;
-  statusElement.textContent = minimumSizeKb
+  const baseStatus = minimumSizeKb
     ? `${shown} of ${total} images shown`
     : `${total} image${total === 1 ? "" : "s"} found`;
+  statusElement.textContent = pendingSizeLookups
+    ? `${baseStatus} · checking ${pendingSizeLookups} size${pendingSizeLookups === 1 ? "" : "s"}`
+    : baseStatus;
 
   if (total > 0 && shown === 0 && minimumSizeKb > 0) {
     renderEmpty(`No images at or above ${minimumSizeKb} KB.`);
@@ -212,6 +289,7 @@ function renderCurrentImages() {
 }
 
 async function refresh() {
+  const scanId = ++activeScanId;
   refreshButton.disabled = true;
   downloadSelectedButton.disabled = true;
   statusElement.textContent = "Scanning current tab...";
@@ -219,16 +297,25 @@ async function refresh() {
   selectedUrls = new Set();
   currentImages = [];
   visibleImages = [];
+  pendingSizeLookups = 0;
 
   try {
-    const images = sortByLargestResolution(await scanImages());
+    const images = sortByLargestResolution(await scanImages()).map((image) => ({
+      ...image,
+      sizePending: false
+    }));
+    if (scanId !== activeScanId) return;
+
     currentImages = images;
     renderCurrentImages();
+    void resolveUnknownImageSizes(scanId);
   } catch (error) {
     statusElement.textContent = "Scan unavailable";
     renderEmpty(error.message);
   } finally {
-    refreshButton.disabled = false;
+    if (scanId === activeScanId) {
+      refreshButton.disabled = false;
+    }
   }
 }
 

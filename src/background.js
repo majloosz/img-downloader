@@ -1,4 +1,5 @@
 import { buildDownloadFilename, isSupportedImageUrl } from "./imageUtils.js";
+import { resolveImageSize } from "./sizeResolver.js";
 
 function downloadImage(url) {
   if (!isSupportedImageUrl(url)) {
@@ -27,6 +28,14 @@ async function downloadImages(urls) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "GET_IMAGE_SIZE") {
+    resolveImageSize(message.url)
+      .then((sizeBytes) => sendResponse({ ok: true, sizeBytes }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+
+    return true;
+  }
+
   if (message?.type === "DOWNLOAD_IMAGE") {
     downloadImage(message.url)
       .then((downloadId) => sendResponse({ ok: true, downloadId }))
