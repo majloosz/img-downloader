@@ -8,9 +8,15 @@
   </head>
   <body>
     <header class="toolbar">
-      <div>
-        <h1>Images</h1>
-        <p id="status" class="status">Scanning current tab...</p>
+      <div class="toolbar-main">
+        <div>
+          <h1>Images</h1>
+          <p id="status" class="status">Scanning current tab...</p>
+        </div>
+        <label class="size-filter" for="maxSizeSlider">
+          <span id="maxSizeLabel">Max size: 5 KB</span>
+          <input id="maxSizeSlider" type="range" min="0" max="512" step="1" value="5">
+        </label>
       </div>
       <div class="toolbar-actions">
         <button id="downloadSelectedButton" class="primary" type="button" disabled>Download selected</button>

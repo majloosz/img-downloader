@@ -10,7 +10,7 @@ Find JPG, JPEG, PNG, and WEBP images on the current page, sort by resolution, pr
 
 ## Detailed description
 
-Simple Image Downloader scans the page you are currently viewing only when you open the extension popup. It lists JPG, JPEG, PNG, and WEBP images, sorts them from largest resolution to smallest, and shows a preview with dimensions and available size metadata. Select one or more images and click `Download selected`, or click `Download` next to a single image to save it through Chrome.
+Simple Image Downloader scans the page you are currently viewing only when you open the extension popup. It lists JPG, JPEG, PNG, and WEBP images, sorts them from largest resolution to smallest, and shows a preview with dimensions and available size metadata. Use the maximum size slider to show only images below the selected KB threshold; the selected threshold is remembered for the next popup session and defaults to 5 KB. Select one or more images and click `Download selected`, or click `Download` next to a single image to save it through Chrome.
 
 The extension does not collect personal data, does not track browsing, does not use analytics, and does not send page data to a server.
 

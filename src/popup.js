@@ -1,15 +1,21 @@
 import {
+  filterImagesBelowSizeKb,
   formatBytes,
   getSelectedImages,
   sortByLargestResolution,
   toggleSelectedUrl
 } from "./imageUtils.js";
 
+const DEFAULT_MAX_SIZE_KB = 5;
+const MAX_SIZE_STORAGE_KEY = "simpleImageDownloader.maximumSizeKb";
 const statusElement = document.querySelector("#status");
 const listElement = document.querySelector("#imageList");
 const refreshButton = document.querySelector("#refreshButton");
 const downloadSelectedButton = document.querySelector("#downloadSelectedButton");
+const maxSizeSlider = document.querySelector("#maxSizeSlider");
+const maxSizeLabel = document.querySelector("#maxSizeLabel");
 let currentImages = [];
+let visibleImages = [];
 let selectedUrls = new Set();
 
 function isRestrictedPage(url) {
@@ -55,6 +61,32 @@ function renderEmpty(message) {
   listElement.replaceChildren(empty);
 }
 
+function readMaximumSizeKb() {
+  const savedValue = Number.parseInt(localStorage.getItem(MAX_SIZE_STORAGE_KEY), 10);
+  return Number.isFinite(savedValue) ? savedValue : DEFAULT_MAX_SIZE_KB;
+}
+
+function writeMaximumSizeKb(value) {
+  localStorage.setItem(MAX_SIZE_STORAGE_KEY, String(value));
+}
+
+function updateMaximumSizeLabel(value) {
+  maxSizeLabel.textContent = `Max size: ${value} KB`;
+}
+
+function syncMaximumSizeControl() {
+  const maximumSizeKb = readMaximumSizeKb();
+  maxSizeSlider.value = String(maximumSizeKb);
+  updateMaximumSizeLabel(maximumSizeKb);
+}
+
+function removeHiddenSelections() {
+  const visibleUrls = new Set(visibleImages.map((image) => image.url));
+  for (const url of selectedUrls) {
+    if (!visibleUrls.has(url)) selectedUrls.delete(url);
+  }
+}
+
 function updateSelectionUi() {
   const selectedCount = selectedUrls.size;
   downloadSelectedButton.disabled = selectedCount === 0;
@@ -76,6 +108,7 @@ async function downloadUrls(urls) {
 function renderImages(images) {
   if (!images.length) {
     renderEmpty("No JPG, JPEG, PNG, or WEBP images found.");
+    updateSelectionUi();
     return;
   }
 
@@ -158,6 +191,26 @@ function renderImages(images) {
   updateSelectionUi();
 }
 
+function renderCurrentImages() {
+  const maximumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
+  visibleImages = filterImagesBelowSizeKb(currentImages, maximumSizeKb);
+  removeHiddenSelections();
+
+  const total = currentImages.length;
+  const shown = visibleImages.length;
+  statusElement.textContent = maximumSizeKb
+    ? `${shown} of ${total} images shown`
+    : `${total} image${total === 1 ? "" : "s"} found`;
+
+  if (total > 0 && shown === 0 && maximumSizeKb > 0) {
+    renderEmpty(`No images below ${maximumSizeKb} KB.`);
+    updateSelectionUi();
+    return;
+  }
+
+  renderImages(visibleImages);
+}
+
 async function refresh() {
   refreshButton.disabled = true;
   downloadSelectedButton.disabled = true;
@@ -165,12 +218,12 @@ async function refresh() {
   listElement.replaceChildren();
   selectedUrls = new Set();
   currentImages = [];
+  visibleImages = [];
 
   try {
     const images = sortByLargestResolution(await scanImages());
     currentImages = images;
-    statusElement.textContent = `${images.length} image${images.length === 1 ? "" : "s"} found`;
-    renderImages(images);
+    renderCurrentImages();
   } catch (error) {
     statusElement.textContent = "Scan unavailable";
     renderEmpty(error.message);
@@ -197,5 +250,13 @@ downloadSelectedButton.addEventListener("click", async () => {
   }
 });
 
+maxSizeSlider.addEventListener("input", () => {
+  const maximumSizeKb = Number.parseInt(maxSizeSlider.value, 10) || 0;
+  writeMaximumSizeKb(maximumSizeKb);
+  updateMaximumSizeLabel(maximumSizeKb);
+  renderCurrentImages();
+});
+
+syncMaximumSizeControl();
 refreshButton.addEventListener("click", refresh);
 refresh();

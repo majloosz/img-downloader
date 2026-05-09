@@ -25,14 +25,16 @@ npm run build:icons
 
 1. Open a webpage with JPG, JPEG, PNG, or WEBP images.
 2. Click the extension icon.
-3. Review images sorted from largest resolution to smallest.
-4. Click one or more image rows to select them.
-5. Click `Download selected` to save all selected images, or click `Download` next to one image to save only that image.
+3. Use the maximum size slider to show only images smaller than the selected KB value. The default is `5 KB`.
+4. Review images sorted from largest resolution to smallest.
+5. Click one or more image rows to select them.
+6. Click `Download selected` to save all selected images, or click `Download` next to one image to save only that image.
 
 ## Limitations
 
 - Chrome blocks extension scripts on internal pages such as `chrome://extensions`.
 - Some sites do not expose transfer-size metadata, so file size can show as `unknown`.
+- When the maximum size slider is above `0 KB`, images with unknown size are hidden because the extension cannot confirm they are below the selected threshold.
 - Lazy-loaded images may appear only after you scroll the page before opening the popup.
 - Chrome may show multiple download notifications when several selected images are downloaded.
 
@@ -48,4 +50,4 @@ npm test
 npm run package
 ```
 
-The ZIP is created in `dist/simple-image-downloader.zip`.
+The packaging step recreates a single `dist/` directory and writes the ZIP to `dist/simple-image-downloader.zip`.

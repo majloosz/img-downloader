@@ -130,8 +130,8 @@ async function createZip() {
 
   const centralDirectory = Buffer.concat(centralParts);
   const end = endRecord(files.length, centralDirectory.length, offset);
+  await rm(outputDir, { recursive: true, force: true });
   await mkdir(outputDir, { recursive: true });
-  await rm(zipPath, { force: true });
   await writeFile(zipPath, Buffer.concat([...localParts, centralDirectory, end]));
   console.log(`Created ${zipPath}`);
 }
