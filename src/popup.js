@@ -19,7 +19,6 @@ let currentImages = [];
 let visibleImages = [];
 let selectedUrls = new Set();
 let activeScanId = 0;
-let pendingSizeLookups = 0;
 
 function isRestrictedPage(url) {
   return !url || /^(chrome|edge|about|chrome-extension):\/\//.test(url);
@@ -120,8 +119,7 @@ function updateImageSize(url, sizeBytes) {
     if (image.url !== url) return image;
 
     const nextSizeBytes = Number.isFinite(sizeBytes) && sizeBytes > 0 ? sizeBytes : image.sizeBytes;
-    const nextPending = false;
-    if (nextSizeBytes === image.sizeBytes && image.sizePending === nextPending) {
+    if (nextSizeBytes === image.sizeBytes && !image.sizePending) {
       return image;
     }
 
@@ -129,7 +127,7 @@ function updateImageSize(url, sizeBytes) {
     return {
       ...image,
       sizeBytes: nextSizeBytes,
-      sizePending: nextPending
+      sizePending: false
     };
   });
 
@@ -147,16 +145,7 @@ async function resolveUnknownImageSizes(scanId) {
     )
   ];
 
-  if (!unresolvedUrls.length) {
-    pendingSizeLookups = 0;
-    return;
-  }
-
-  currentImages = currentImages.map((image) =>
-    Number.isFinite(image.sizeBytes) ? image : { ...image, sizePending: true }
-  );
-  pendingSizeLookups = unresolvedUrls.length;
-  renderCurrentImages();
+  if (!unresolvedUrls.length) return;
 
   const queue = [...unresolvedUrls];
   const workerCount = Math.min(MAX_CONCURRENT_SIZE_REQUESTS, queue.length);
@@ -170,7 +159,6 @@ async function resolveUnknownImageSizes(scanId) {
         if (scanId !== activeScanId) return;
 
         updateImageSize(url, sizeBytes);
-        pendingSizeLookups = Math.max(0, pendingSizeLookups - 1);
         renderCurrentImages();
       }
     })
@@ -275,8 +263,9 @@ function renderCurrentImages() {
   const baseStatus = minimumSizeKb
     ? `${shown} of ${total} images shown`
     : `${total} image${total === 1 ? "" : "s"} found`;
-  statusElement.textContent = pendingSizeLookups
-    ? `${baseStatus} · checking ${pendingSizeLookups} size${pendingSizeLookups === 1 ? "" : "s"}`
+  const pendingCount = currentImages.filter((img) => img.sizePending).length;
+  statusElement.textContent = pendingCount
+    ? `${baseStatus} · checking ${pendingCount} size${pendingCount === 1 ? "" : "s"}`
     : baseStatus;
 
   if (total > 0 && shown === 0 && minimumSizeKb > 0) {
@@ -297,12 +286,11 @@ async function refresh() {
   selectedUrls = new Set();
   currentImages = [];
   visibleImages = [];
-  pendingSizeLookups = 0;
 
   try {
     const images = sortByLargestResolution(await scanImages()).map((image) => ({
       ...image,
-      sizePending: false
+      sizePending: !Number.isFinite(image.sizeBytes)
     }));
     if (scanId !== activeScanId) return;
 

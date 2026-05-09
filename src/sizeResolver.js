@@ -8,7 +8,7 @@ export function parseContentRangeTotal(contentRange) {
   return match ? parsePositiveInt(match[1]) : null;
 }
 
-function getHeadResponseSize(response) {
+function getContentLength(response) {
   return parsePositiveInt(response?.headers?.get("content-length"));
 }
 
@@ -17,7 +17,7 @@ function getRangeResponseSize(response) {
   if (totalBytes) return totalBytes;
 
   if (response?.status !== 206) {
-    return parsePositiveInt(response?.headers?.get("content-length"));
+    return getContentLength(response);
   }
 
   return null;
@@ -45,7 +45,7 @@ export async function resolveImageSize(url, fetchImpl = fetch) {
     credentials: "include",
     redirect: "follow"
   });
-  const headSize = getHeadResponseSize(headResponse);
+  const headSize = getContentLength(headResponse);
   cancelResponseBody(headResponse);
   if (headSize) return headSize;
 
