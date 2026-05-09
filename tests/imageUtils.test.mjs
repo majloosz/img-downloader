@@ -119,7 +119,7 @@ test("returns selected images in current display order", () => {
   );
 });
 
-test("filters images below maximum known size in KB", () => {
+test("keeps unknown-size images visible while filtering by maximum size in KB", () => {
   const images = [
     normalizeImageCandidate({ url: "https://e.test/tiny.jpg", width: 10, height: 10, sizeBytes: 4 * 1024 }),
     normalizeImageCandidate({ url: "https://e.test/large.jpg", width: 1000, height: 800, sizeBytes: 6 * 1024 }),
@@ -128,7 +128,7 @@ test("filters images below maximum known size in KB", () => {
 
   assert.deepEqual(
     filterImagesBelowSizeKb(images, 5).map((image) => image.url),
-    ["https://e.test/tiny.jpg"]
+    ["https://e.test/tiny.jpg", "https://e.test/unknown.webp"]
   );
   assert.equal(filterImagesBelowSizeKb(images, 0).length, 3);
 });

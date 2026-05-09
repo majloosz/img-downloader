@@ -34,7 +34,7 @@ npm run build:icons
 
 - Chrome blocks extension scripts on internal pages such as `chrome://extensions`.
 - Some sites do not expose transfer-size metadata, so file size can show as `unknown`.
-- When the maximum size slider is above `0 KB`, images with unknown size are hidden because the extension cannot confirm they are below the selected threshold.
+- When the maximum size slider is above `0 KB`, images with unknown size stay visible because the extension cannot confirm whether they are above the selected threshold.
 - Lazy-loaded images may appear only after you scroll the page before opening the popup.
 - Chrome may show multiple download notifications when several selected images are downloaded.
 
