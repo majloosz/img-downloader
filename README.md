@@ -1,5 +1,7 @@
 # Simple Image Downloader
 
+<img src="icons/icon-128.png" alt="Simple Image Downloader icon" width="64" height="64" align="left">
+
 A lightweight Chrome / Chromium extension (Manifest V3) that finds images on the page you are viewing, sorts them by resolution, and lets you download the ones you want. No accounts, no tracking, no backend — everything runs locally in your browser.
 
 ![Extension popup showing detected images sorted by resolution](screenshots/popup.png)
