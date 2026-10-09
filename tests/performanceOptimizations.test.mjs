@@ -94,3 +94,27 @@ test("ignores keyboard row toggles that originate from the download button", () 
     dataset: { url: "https://e.test/a.jpg" }
   });
 });
+
+test("cancelled render batches never invoke the render", async () => {
+  let scheduled = null;
+  let renderCount = 0;
+  const batcher = createRenderBatcher(
+    () => {
+      renderCount += 1;
+    },
+    (callback) => {
+      scheduled = callback;
+    }
+  );
+
+  batcher.request();
+  batcher.cancel();
+  scheduled();
+
+  assert.equal(renderCount, 0);
+
+  batcher.request();
+  scheduled();
+
+  assert.equal(renderCount, 1);
+});

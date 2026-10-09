@@ -1,4 +1,6 @@
-const SUPPORTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
+export const SUPPORTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "avif"];
+
+const SUPPORTED_EXTENSIONS = new Set(SUPPORTED_IMAGE_EXTENSIONS);
 
 function hasPathExtension(pathname) {
   return /\.[a-z0-9]+$/i.test(pathname);
@@ -114,9 +116,7 @@ export function buildDownloadFilename(url) {
   const rawName = hasExtension
     ? decodeURIComponent(parsed.pathname.split("/").pop() || "image-download")
     : "image-download";
-  const withoutExtension = /[^\x00-\x7F]/.test(rawName)
-    ? "image-download"
-    : rawName.replace(/\.[^.]+$/, "") || "image-download";
+  const withoutExtension = foldToAscii(rawName).replace(/\.[^.]+$/, "") || "image-download";
   const safeName = withoutExtension
     .toLowerCase()
     .normalize("NFKD")
@@ -125,6 +125,26 @@ export function buildDownloadFilename(url) {
     .replace(/^-+|-+$/g, "");
 
   return `${safeName || "image-download"}.${extension === "jpeg" ? "jpg" : extension}`;
+}
+
+const POLISH_FOLD = {
+  "\u0105": "a",
+  "\u0107": "c",
+  "\u0119": "e",
+  "\u0142": "l",
+  "\u0144": "n",
+  "\u00f3": "o",
+  "\u015b": "s",
+  "\u017a": "z",
+  "\u017c": "z"
+};
+
+export function foldToAscii(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[\u0105\u0107\u0119\u0142\u0144\u00f3\u015b\u017a\u017c]/g, (ch) => POLISH_FOLD[ch] || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 export function toggleSelectedUrl(selectedUrls, url) {

@@ -177,3 +177,12 @@ button:disabled {
   display: flex;
   justify-content: flex-start;
 }
+
+.list-footer {
+  display: grid;
+  padding: 0 12px 12px;
+}
+
+.list-footer button[hidden] {
+  display: none;
+}

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseContentRangeTotal, resolveImageSize } from "../src/sizeResolver.js";
+import { parseContentRangeTotal, resolveImageInfo, resolveImageSize } from "../src/sizeResolver.js";
 
 function createResponse({ status = 200, headers = {} } = {}) {
   const normalizedHeaders = new Map(
@@ -88,4 +88,41 @@ test("returns null when both probes fail to expose size", async () => {
   const sizeBytes = await resolveImageSize("https://e.test/image.png", async () => responses.shift());
 
   assert.equal(sizeBytes, null);
+});
+
+test("rejects non-image content types as not-an-image", async () => {
+  const info = await resolveImageInfo(
+    "https://e.test/tracker",
+    async () => createResponse({ headers: { "content-length": "512", "content-type": "text/html" } })
+  );
+
+  assert.equal(info.isImage, false);
+  assert.equal(info.contentType, "text/html");
+  assert.equal(
+    await resolveImageSize(
+      "https://e.test/tracker",
+      async () => createResponse({ headers: { "content-length": "512", "content-type": "text/html" } })
+    ),
+    null
+  );
+});
+
+test("accepts image content types and exposes them", async () => {
+  const info = await resolveImageInfo(
+    "https://e.test/photo.avif",
+    async () => createResponse({ headers: { "content-length": "2048", "content-type": "image/avif" } })
+  );
+
+  assert.equal(info.isImage, true);
+  assert.equal(info.sizeBytes, 2048);
+  assert.equal(info.contentType, "image/avif");
+});
+
+test("aborts hung probes after the configured timeout", async () => {
+  const info = await resolveImageInfo("https://e.test/hung.jpg", () => new Promise(() => {}), {
+    timeoutMs: 15
+  });
+
+  assert.equal(info.sizeBytes, null);
+  assert.equal(info.isImage, true);
 });

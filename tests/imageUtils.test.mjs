@@ -19,6 +19,8 @@ test("filters supported remote image URLs", () => {
   assert.equal(isSupportedImageUrl("https://example.com/a.jpeg?x=1"), true);
   assert.equal(isSupportedImageUrl("https://example.com/a.png#hash"), true);
   assert.equal(isSupportedImageUrl("https://example.com/a.webp"), true);
+  assert.equal(isSupportedImageUrl("https://example.com/a.gif"), true);
+  assert.equal(isSupportedImageUrl("https://example.com/a.avif"), true);
   assert.equal(
     isSupportedImageUrl(
       "https://a.allegroimg.com/original/11bc1e/922e56f74e5c88e857bdaa318554/FOLIA-STRETCH-CZARNA-3-XL-GRUBA-MOCNA-DO-PACZEK-KRYJACA-PREMIUM",
@@ -106,7 +108,8 @@ test("builds safe download filenames", () => {
     "my-photo.jpg"
   );
   assert.equal(buildDownloadFilename("https://example.com/image"), "image-download.jpg");
-  assert.equal(buildDownloadFilename("https://example.com/ąęźć.webp"), "image-download.webp");
+  assert.equal(buildDownloadFilename("https://example.com/ąęźć.webp"), "aezc.webp");
+  assert.equal(buildDownloadFilename("https://example.com/ZDJĘCIE-ŁÓDŹ.jpg"), "zdjecie-lodz.jpg");
 });
 
 test("toggles selected URLs without mutating existing selection", () => {
