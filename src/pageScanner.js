@@ -177,10 +177,10 @@
     return roots;
   }
 
-  function queryAllDeep(doc, selector) {
+  function queryAllDeep(doc, selector, cachedRoots) {
     const out = [];
     const seen = new Set();
-    for (const root of queryRoots(doc)) {
+    for (const root of cachedRoots || queryRoots(doc)) {
       let nodes = [];
       try {
         nodes = root.querySelectorAll(selector);
@@ -199,7 +199,7 @@
   }
 
   function collectImgCandidates(candidates, resourceSizeMap, ctx) {
-    queryAllDeep(ctx.doc, "img").forEach((img) => {
+    queryAllDeep(ctx.doc, "img", ctx.roots).forEach((img) => {
       const dims = {
         width: img.naturalWidth || img.width || 0,
         height: img.naturalHeight || img.height || 0
@@ -221,7 +221,7 @@
   }
 
   function collectSourceCandidates(candidates, resourceSizeMap, ctx) {
-    queryAllDeep(ctx.doc, "source[srcset]").forEach((source) => {
+    queryAllDeep(ctx.doc, "source[srcset]", ctx.roots).forEach((source) => {
       const best = getLargestSrcsetUrl(source.srcset || getAttribute(source, "srcset") || "");
       if (best) {
         addCandidate(candidates, resourceSizeMap, ctx.base, best, { source: "source" });
@@ -230,7 +230,7 @@
   }
 
   function collectLinkedImages(candidates, resourceSizeMap, ctx) {
-    queryAllDeep(ctx.doc, "a[href]").forEach((link) => {
+    queryAllDeep(ctx.doc, "a[href]", ctx.roots).forEach((link) => {
       const href = typeof link.href === "string" ? link.href : getAttribute(link, "href");
       addCandidate(candidates, resourceSizeMap, ctx.base, href, { source: "link" });
     });
@@ -318,7 +318,7 @@
       }
       return Date.now();
     };
-    const ctx = { doc, win, base, now };
+    const ctx = { doc, win, base, now, roots: queryRoots(doc) };
 
     const candidates = [];
     let resourceSizeMap = new Map();

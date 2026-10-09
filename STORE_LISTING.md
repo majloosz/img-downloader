@@ -6,11 +6,11 @@ Simple Image Downloader has one single purpose: help users find image files on t
 
 ## Short description
 
-Find JPG, JPEG, PNG, and WEBP images on the current page, sort by resolution, preview metadata, and download one image.
+Find JPG, JPEG, PNG, WEBP, GIF, and AVIF images on the current page, sort by resolution, preview metadata, and download one image.
 
 ## Detailed description
 
-Simple Image Downloader scans the page you are currently viewing only when you open the extension popup. It lists JPG, JPEG, PNG, and WEBP images, sorts them from largest resolution to smallest, and shows a preview with dimensions and available size metadata. Use the minimum size slider to show only images at or above the selected KB threshold; the selected threshold is remembered for the next popup session and defaults to 5 KB. Select one or more images and click `Download selected`, or click `Download` next to a single image to save it through Chrome.
+Simple Image Downloader scans the page you are currently viewing only when you open the extension popup. It lists JPG, JPEG, PNG, WEBP, GIF, and AVIF images, sorts them from largest resolution to smallest, and shows a preview with dimensions and available size metadata. Use the minimum size slider to show only images at or above the selected KB threshold; the selected threshold is remembered for the next popup session and defaults to 5 KB. Select one or more images and click `Download selected`, or click `Download` next to a single image to save it through Chrome.
 
 The extension does not collect personal data, does not track browsing, does not use analytics, and does not send page data to a server.
 
